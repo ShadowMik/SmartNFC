@@ -28,10 +28,21 @@ const int RST_PIN = A1;
   Adafruit_PN532 nfc(IRQ_PIN, RST_PIN);
 #endif
 
+void checkCardID(uint32_t cardID);
+
+void addKey();
+
+void removeKey();
+
+void addKeyThroughReader();
+
+void showState();
+
+void lockUnlock();
+
 void setup() {
 
     Serial.begin(115200);
-    //Wire.setSpeed(115200);
 
     while(!Serial){
         delay(10);
@@ -88,8 +99,38 @@ void loop() {
             cardid |= uid[3]; 
             Serial.print("Mifare Classic card #");
             Serial.println(cardid);
+            checkCardID(cardid);
         }
        
         Serial.println("");
     }
+}
+
+void checkCardID(uint32_t cardID){
+    if (cardID == 3283616780){ // Tobias Nøgle: 3283616780
+        Serial.println("blå brik");
+    }
+        if (cardID == 3248756763){ //Tobias Nøgle: 3248756763
+        Serial.println("hvidt kort");
+    }
+}
+
+void addKey(){
+
+}
+
+void removeKey(){
+
+}
+
+void addKeyThroughReader(){
+
+}
+
+void showState(){
+
+}
+
+void lockUnlock(){
+
 }

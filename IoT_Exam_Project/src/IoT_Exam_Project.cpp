@@ -14,17 +14,29 @@
 
 // This #include statement was automatically added by the Particle IDE.
 #include "Adafruit_PN532.h"
-
-
+#include <iostream>
+#include <String>
+#include <map>
+#include <iterator>
+#include <fcntl.h>
 void setup();
 void loop();
-#line 13 "c:/Users/Tobias/Documents/Particle_IO/SmartNFC/IoT_Exam_Project/src/IoT_Exam_Project.ino"
-#define DEBUG_PRINT(...) { Particle.publish( "DEBUG", String::format(__VA_ARGS__) ); }
+#line 16 "c:/Users/Tobias/Documents/Particle_IO/SmartNFC/IoT_Exam_Project/src/IoT_Exam_Project.ino"
+using namespace std;
 
+#define DEBUG_PRINT(...) { Particle.publish( "DEBUG", String::format(__VA_ARGS__) ); }
+#define LOG_PRINT(...) { Particle.publish( "LOG", String::format(__VA_ARGS__) ); }
+
+const size_t msgsize = 1000;
 const int SS_PIN = A5;
 const int SCK_PIN = D13;
 const int MISO_PIN = D11;
 const int MOSI_PIN = D12;
+
+const pin_t Red_LED = D1;
+const pin_t Green_LED = D0;
+
+std::map<uint32_t, String> ids;
 
 // note: these are not used for SPI mode
 const int IRQ_PIN = A0;
@@ -36,6 +48,7 @@ const int RST_PIN = A1;
 #elif PN532_MODE == PN532_I2C_MODE
   Adafruit_PN532 nfc(IRQ_PIN, RST_PIN);
 #endif
+
 
 void checkCardID(uint32_t cardID);
 
@@ -49,14 +62,28 @@ void showState();
 
 void lockUnlock();
 
+void saveUsers();
+
+void loadUsers();
+
 void setup() {
 
     Serial.begin(115200);
+
+    pinMode(Red_LED, OUTPUT);
+    pinMode(Green_LED, OUTPUT);
 
     while(!Serial){
         delay(10);
     }
 
+    saveUsers();
+    loadUsers();
+
+    //manually add two ids
+    ids[3283616780] = "Tobias blå";
+    ids[3248756763] = "Tobias hvid";
+    
     nfc.begin();
 
     uint32_t versiondata;
@@ -116,12 +143,22 @@ void loop() {
 }
 
 void checkCardID(uint32_t cardID){
-    if (cardID == 3283616780){ // Tobias Nøgle: 3283616780
-        Serial.println("blå brik");
+   
+    auto it = ids.find(cardID);
+    if (it != ids.end()){
+        LOG_PRINT(ids.at(cardID));
+        digitalWrite(Green_LED, HIGH);
+        lockUnlock();
+        delay(2000);
+        digitalWrite(Green_LED, LOW);
+    } else {
+        digitalWrite(Red_LED, HIGH);
+        delay(2000);
+        digitalWrite(Red_LED, LOW);
     }
-        if (cardID == 3248756763){ //Tobias Nøgle: 3248756763
-        Serial.println("hvidt kort");
-    }
+
+
+
 }
 
 void addKey(){
@@ -141,5 +178,30 @@ void showState(){
 }
 
 void lockUnlock(){
+    //check if locked
+    // unlock
+    // else
+    // lock
+}
 
+void saveUsers(){
+    int fd = open("Users.txt", O_RDWR | O_CREAT);
+    if (fd != -1){
+        string msg = "hej";
+        write(fd, msg.c_str(),msgsize);
+    }
+    close(fd);
+}
+
+void loadUsers(){
+    int fd = open("Users.txt", O_RDWR | O_CREAT);
+    if (fd != -1){
+        void* msg;
+        DEBUG_PRINT((char*) read(fd,msg, msgsize));
+
+        Serial.println((char*) msg);
+        Serial.println(msgsize);
+
+    }
+    close(fd);
 }

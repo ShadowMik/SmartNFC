@@ -13,12 +13,21 @@
 #include <map>
 #include <iterator>
 #include <fcntl.h>
-using namespace std;
+//using namespace std;
+
+#include <vector>
+#include <string>
+#include <sstream>
+#include <iostream>
+
 
 #define DEBUG_PRINT(...) { Particle.publish( "DEBUG", String::format(__VA_ARGS__) ); }
 #define LOG_PRINT(...) { Particle.publish( "LOG", String::format(__VA_ARGS__) ); }
 
 const size_t msgsize = 1000;
+
+uint32_t cardid;
+int counter = 0;
 const int SS_PIN = A5;
 const int SCK_PIN = D13;
 const int MISO_PIN = D11;
@@ -40,14 +49,13 @@ const int RST_PIN = A1;
   Adafruit_PN532 nfc(IRQ_PIN, RST_PIN);
 #endif
 
-
 void checkCardID(uint32_t cardID);
 
-void addKey();
+int addKey(String ID);
 
-void removeKey();
+int removeKey(String ID);
 
-void addKeyThroughReader();
+int addKeyThroughReader(String ID);
 
 void showState();
 
@@ -64,15 +72,22 @@ void setup() {
     pinMode(Red_LED, OUTPUT);
     pinMode(Green_LED, OUTPUT);
 
+    Particle.function("add user example (3283616780 Tobias)", addKey);
+    Particle.function("remove user example (3283616780)", removeKey);
+    Particle.function("add user through reader example (name to card)", addKeyThroughReader);
+
     while(!Serial){
         delay(10);
     }
 
 
     //manually add two ids
-    ids[3283616780] = "Tobias blå";
+    //ids[3283616780] = "Tobias blå";
+    //ids[347178822] = "Tobias studiekort"
     ids[3248756763] = "Tobias hvid";
     
+    
+
     nfc.begin();
 
     uint32_t versiondata;
@@ -102,11 +117,12 @@ void setup() {
 }
 
 void loop() {
+
     uint8_t success = 0;
     uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
     uint8_t uidLength = 0;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
     success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, &uid[0], &uidLength);
-
+    
     if (success) {
         // Display some basic information about the card
         Serial.println("Found an ISO14443A card");
@@ -115,7 +131,8 @@ void loop() {
         nfc.PrintHex(uid, uidLength);
      
         if (uidLength == 4) {
-            uint32_t cardid = uid[0];
+            counter = 0;
+            cardid = uid[0];
             cardid <<= 8;
             cardid |= uid[1];
             cardid <<= 8;
@@ -126,9 +143,16 @@ void loop() {
             Serial.println(cardid);
             checkCardID(cardid);
         }
-       
+        
         Serial.println("");
     }
+    Serial.println(cardid);
+    counter ++;
+    if (counter > 60){
+        cardid = 0;
+        counter = 0;
+    }
+
 }
 
 void checkCardID(uint32_t cardID){
@@ -146,24 +170,50 @@ void checkCardID(uint32_t cardID){
         digitalWrite(Red_LED, LOW);
     }
 
-
-
 }
 
-void addKey(){
+int addKey(String ID){
 
+    char *name;
+    u_int32_t number = strtoul(ID,&name,10); 
+
+    if (number > 1) {
+        ids[number] = name;
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
-void removeKey(){
+int removeKey(String ID){
+    char *name;
+    u_int32_t number = strtoul(ID,&name,10); 
 
+    auto it = ids.find(number);
+    if (it != ids.end()){
+        ids.erase(number);
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
-void addKeyThroughReader(){
+int addKeyThroughReader(String ID){
+    //add name and then scan the card
 
+    auto it = ids.find(cardid);
+    if (it != ids.end()){
+        return -1; //is allready there
+    } else if (cardid > 1) {
+        ids[cardid] = ID;
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 void showState(){
-
+    //particle variable
 }
 
 void lockUnlock(){
@@ -173,7 +223,7 @@ void lockUnlock(){
     // lock
 }
 
-/* work in progress
+/*
 void saveUsers(){
     int fd = open("Users.txt", O_RDWR | O_CREAT);
     if (fd != -1){
@@ -187,7 +237,7 @@ void loadUsers(){
     int fd = open("Users.txt", O_RDWR | O_CREAT);
     if (fd != -1){
         void* msg;
-        DEBUG_PRINT((char*) read(fd,msg, msgsize));
+        (char*) read(fd,msg, msgsize);
 
         Serial.println((char*) msg);
         Serial.println(msgsize);

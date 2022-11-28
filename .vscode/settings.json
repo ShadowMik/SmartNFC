@@ -1,0 +1,5 @@
+{
+    "particle.firmwareVersion": "4.0.0",
+    "particle.targetPlatform": "argon",
+    "particle.targetDevice": "Leo_argon"
+}

@@ -191,6 +191,9 @@ class Adafruit_PN532{
   static void PrintHex(const byte * data, const uint32_t numBytes);
   static void PrintHexChar(const byte * pbtData, const uint32_t numBytes);
 
+  // Sleep function for PN532
+  void shutDown_PN532();
+
  private:
   uint8_t _irq, _reset;  // pins used for I2C
   uint8_t _ss, _clk, _mosi, _miso;  // pins used for SPI

@@ -9,7 +9,7 @@
 // This #include statement was automatically added by the Particle IDE.
 #include "Adafruit_PN532.h"
 #include <iostream>
-#include <String>
+//#include <String>
 #include <map>
 #include <iterator>
 #include <fcntl.h>
@@ -39,6 +39,8 @@ const pin_t Red_LED = D1;
 const pin_t Green_LED = D0;
 
 std::map<uint32_t, String> ids;
+
+std::map<uint32_t, String> ids_cloud;
 
 // note: these are not used for SPI mode
 const int IRQ_PIN = A0;
@@ -258,53 +260,62 @@ void loadUsers(){
 void myHandler(const char *event, const char *data)
 {
 
-  Serial.printf("data %s \n", data);
-  Serial.printf("event %s \n", event);
+    //Serial.printf("data %s \n", data);
+    //Serial.printf("event %s \n", event);
 
-  JSONValue obj = JSONValue::parseCopy(data);
-  /*
-    if (obj.isArray())
-    {
-      Serial.printf("obj is array \n");
-    }
-  */
-  JSONArrayIterator iter(obj);
-  JSONArrayIterator iterCount(obj);
-
-  int count = 0;
-  while (iterCount.next())
-  {
-    count++;
-  }
-
-  unsigned int nfc_key[count];
-
-  for (int i = 0; iter.next(); i++)
-  {
-
+    JSONValue obj = JSONValue::parseCopy(data);
     /*
-        if (iter.value().isObject())
-        {
-          Serial.printf("iter.value is objekt \n");
-        }
-    */
-    JSONObjectIterator iter1(iter.value());
-
-    while (iter1.next())
-    {
-      if (iter1.name() == "nfc_key")
+      if (obj.isArray())
       {
-        double iterIn = iter1.value().toDouble();
-        nfc_key[i] = (unsigned int)iterIn;
-        Serial.printf("NFC_key:  %lf \n", iterIn);
+        Serial.printf("obj is array \n");
       }
+    */
+    JSONArrayIterator iter(obj);
+    JSONArrayIterator iterCount(obj);
+
+    int count = 0;
+    while (iterCount.next())
+    {
+        count++;
     }
-  }
 
-  for (int i = 0; i < count; i++)
-  {
-    Serial.printf("nfc_key: %u \n", nfc_key[i]);
-  }
+    unsigned int nfc_key[count];
+    char name[count][20];
 
-  Serial.println();
+    for (int i = 0; iter.next(); i++)
+    {
+
+        /*
+            if (iter.value().isObject())
+            {
+              Serial.printf("iter.value is objekt \n");
+            }
+        */
+        JSONObjectIterator iter1(iter.value());
+
+        while (iter1.next())
+        {
+            if (iter1.name() == "nfc_key")
+            {
+                double iterIn = iter1.value().toDouble();
+                nfc_key[i] = (unsigned int)iterIn;
+                //Serial.printf("NFC_key:  %lf \n", iterIn);
+            }
+            else if (iter1.name() == "name")
+            {
+                strcpy(name[i], iter1.value().toString().data()); 
+
+            }
+        }
+    }
+
+    for (int i = 0; i < count; i++)
+    {
+        //Serial.printf("nfc_key: %u \n", nfc_key[i]);
+        //Serial.printf("name: %s \n", name[i]);
+        ids_cloud[nfc_key[i]] = name[i];
+        
+    }
+
+    Serial.println();
 }

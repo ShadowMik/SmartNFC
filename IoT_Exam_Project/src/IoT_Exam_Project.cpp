@@ -33,6 +33,8 @@ void loop();
 #define DEBUG_PRINT(...) { Particle.publish( "DEBUG", String::format(__VA_ARGS__) ); }
 #define LOG_PRINT(...) { Particle.publish( "LOG", String::format(__VA_ARGS__) ); }
 
+#define DEVICE_ID "e00fce685fcfeb9205b45215"
+
 const size_t msgsize = 1000;
 
 uint32_t cardid;
@@ -58,8 +60,6 @@ const int RST_PIN = A1;
   Adafruit_PN532 nfc(IRQ_PIN, RST_PIN);
 #endif
 
-void NFCloop();
-
 void checkCardID(uint32_t cardID);
 
 int addKey(String ID);
@@ -75,6 +75,8 @@ void lockUnlock();
 void saveUsers();
 
 void loadUsers();
+
+void myHandler(const char *event, const char *data);
 
 void setup() {
 
@@ -125,15 +127,15 @@ void setup() {
     nfc.SAMConfig();
   
     Serial.println("Waiting for an ISO14443A Card ...");
+
+    Particle.subscribe("nfc", myHandler, DEVICE_ID);
 }
 
 void loop() {
 
-    NFCloop();
+    // get cloud id
+    Particle.publish("NFC_test", PRIVATE);
 
-}
-
-void NFCloop(){
     uint8_t success = 0;
     uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
     uint8_t uidLength = 0;                        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
@@ -168,6 +170,7 @@ void NFCloop(){
         cardid = 0;
         counter = 0;
     }
+
 }
 
 void checkCardID(uint32_t cardID){
@@ -260,3 +263,57 @@ void loadUsers(){
     }
     close(fd);
 }*/
+
+void myHandler(const char *event, const char *data)
+{
+
+  Serial.printf("data %s \n", data);
+  Serial.printf("event %s \n", event);
+
+  JSONValue obj = JSONValue::parseCopy(data);
+  /*
+    if (obj.isArray())
+    {
+      Serial.printf("obj is array \n");
+    }
+  */
+  JSONArrayIterator iter(obj);
+  JSONArrayIterator iterCount(obj);
+
+  int count = 0;
+  while (iterCount.next())
+  {
+    count++;
+  }
+
+  unsigned int nfc_key[count];
+
+  for (int i = 0; iter.next(); i++)
+  {
+
+    /*
+        if (iter.value().isObject())
+        {
+          Serial.printf("iter.value is objekt \n");
+        }
+    */
+    JSONObjectIterator iter1(iter.value());
+
+    while (iter1.next())
+    {
+      if (iter1.name() == "nfc_key")
+      {
+        double iterIn = iter1.value().toDouble();
+        nfc_key[i] = (unsigned int)iterIn;
+        Serial.printf("NFC_key:  %lf \n", iterIn);
+      }
+    }
+  }
+
+  for (int i = 0; i < count; i++)
+  {
+    Serial.printf("nfc_key: %u \n", nfc_key[i]);
+  }
+
+  Serial.println();
+}

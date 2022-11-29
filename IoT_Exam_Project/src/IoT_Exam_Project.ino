@@ -24,7 +24,7 @@
 #define DEBUG_PRINT(...) { Particle.publish( "DEBUG", String::format(__VA_ARGS__) ); }
 #define LOG_PRINT(...) { Particle.publish( "LOG", String::format(__VA_ARGS__) ); }
 
-#define DEVICE_ID "device - id"
+#define DEVICE_ID "e00fce685fcfeb9205b45215"
 
 const size_t msgsize = 1000;
 
@@ -125,7 +125,7 @@ void setup() {
 void loop() {
 
     // get cloud id
-    // Particle.publish("NFC_test", PRIVATE);
+    Particle.publish("NFC_test", PRIVATE);
 
     uint8_t success = 0;
     uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID

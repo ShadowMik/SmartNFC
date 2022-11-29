@@ -24,6 +24,8 @@
 #define DEBUG_PRINT(...) { Particle.publish( "DEBUG", String::format(__VA_ARGS__) ); }
 #define LOG_PRINT(...) { Particle.publish( "LOG", String::format(__VA_ARGS__) ); }
 
+#define DEVICE_ID "device - id"
+
 const size_t msgsize = 1000;
 
 uint32_t cardid;
@@ -64,6 +66,8 @@ void lockUnlock();
 void saveUsers();
 
 void loadUsers();
+
+void myHandler(const char *event, const char *data);
 
 void setup() {
 
@@ -114,9 +118,14 @@ void setup() {
     nfc.SAMConfig();
   
     Serial.println("Waiting for an ISO14443A Card ...");
+
+    Particle.subscribe("nfc", myHandler, DEVICE_ID);
 }
 
 void loop() {
+
+    // get cloud id
+    // Particle.publish("NFC_test", PRIVATE);
 
     uint8_t success = 0;
     uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
@@ -245,3 +254,57 @@ void loadUsers(){
     }
     close(fd);
 }*/
+
+void myHandler(const char *event, const char *data)
+{
+
+  Serial.printf("data %s \n", data);
+  Serial.printf("event %s \n", event);
+
+  JSONValue obj = JSONValue::parseCopy(data);
+  /*
+    if (obj.isArray())
+    {
+      Serial.printf("obj is array \n");
+    }
+  */
+  JSONArrayIterator iter(obj);
+  JSONArrayIterator iterCount(obj);
+
+  int count = 0;
+  while (iterCount.next())
+  {
+    count++;
+  }
+
+  unsigned int nfc_key[count];
+
+  for (int i = 0; iter.next(); i++)
+  {
+
+    /*
+        if (iter.value().isObject())
+        {
+          Serial.printf("iter.value is objekt \n");
+        }
+    */
+    JSONObjectIterator iter1(iter.value());
+
+    while (iter1.next())
+    {
+      if (iter1.name() == "nfc_key")
+      {
+        double iterIn = iter1.value().toDouble();
+        nfc_key[i] = (unsigned int)iterIn;
+        Serial.printf("NFC_key:  %lf \n", iterIn);
+      }
+    }
+  }
+
+  for (int i = 0; i < count; i++)
+  {
+    Serial.printf("nfc_key: %u \n", nfc_key[i]);
+  }
+
+  Serial.println();
+}
